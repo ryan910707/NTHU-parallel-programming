@@ -1,2 +1,2 @@
 mpicxx -O3 hw1.cc -o hw1
-srun -N3 -n3 ./hw1 12345 07.in 07.out
+srun -N2 -n4 ./hw1 4 01.in 01.out

@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
     
     MPI_File_open(MPI_COMM_WORLD, input_filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &input_file);
     if(rank_size!=0) {
-        printf("start reading %d %d %d %d %d %d %d\n", rank, start, rank_size, left_count, right_count, left_neighbor, right_neighbor);
+        // printf("start reading %d %d %d %d %d %d %d\n", rank, start, rank_size, left_count, right_count, left_neighbor, right_neighbor);
         MPI_File_read_at(input_file, sizeof(float) *start, my_array, rank_size, MPI_FLOAT, MPI_STATUS_IGNORE);
         // for(int i=0;i<rank_size;i++){
         //     printf("%f ", my_array[i]);
@@ -161,72 +161,67 @@ int main(int argc, char **argv) {
 
     int all_sort;
     int sort = 0;
-    int i=0;
     float received_num;
-    std::cout<<"start iteration\n";
-    for(int i=0;i<round+1;i++){
-        if(i&1){
-            //odd round
-            if(rank&1){
-                if(right_neighbor!=-1){
-                    MPI_Sendrecv(my_array+rank_size-1, 1, MPI_FLOAT, right_neighbor, 0, &received_num, 1, MPI_FLOAT, right_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                    if(received_num<my_array[rank_size-1]){
-                        MPI_Sendrecv(my_array, rank_size, MPI_FLOAT, right_neighbor, 0, received_array, right_count, MPI_FLOAT, right_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                        merge_array_right(my_array, received_array, result_array, rank_size, right_count);
-                    }
-                }
-            }
-            else {
-                if(left_neighbor!=-1){
-                    MPI_Sendrecv(my_array, 1, MPI_FLOAT, left_neighbor, 0, &received_num, 1, MPI_FLOAT, left_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                    if(received_num>my_array[0]){
-                        MPI_Sendrecv(my_array, rank_size, MPI_FLOAT, left_neighbor, 0, received_array, left_count, MPI_FLOAT, left_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                        merge_array_left(my_array, received_array, result_array, rank_size, left_count);
-                    }
+    while(all_sort < world_size){
+        sort = 1;
+        //odd round
+        if(rank&1){
+            if(right_neighbor!=-1){
+                MPI_Sendrecv(my_array+rank_size-1, 1, MPI_FLOAT, right_neighbor, 0, &received_num, 1, MPI_FLOAT, right_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                if(received_num<my_array[rank_size-1]){
+                    sort = 0;
+                    MPI_Sendrecv(my_array, rank_size, MPI_FLOAT, right_neighbor, 0, received_array, right_count, MPI_FLOAT, right_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    merge_array_right(my_array, received_array, result_array, rank_size, right_count);
                 }
             }
         }
         else {
-            if(rank&1){
-                if(left_neighbor!=-1){
-                    MPI_Sendrecv(my_array, 1, MPI_FLOAT, left_neighbor, 0, &received_num, 1, MPI_FLOAT, left_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                    if(received_num>my_array[0]){
-                        MPI_Sendrecv(my_array, rank_size, MPI_FLOAT, left_neighbor, 0, received_array, left_count, MPI_FLOAT, left_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                        merge_array_left(my_array, received_array, result_array, rank_size, left_count);
-                    }
-                }
-            }
-            else {
-                if(right_neighbor!=-1){
-                    MPI_Sendrecv(my_array+rank_size-1, 1, MPI_FLOAT, right_neighbor, 0, &received_num, 1, MPI_FLOAT, right_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                    if(received_num<my_array[rank_size-1]){
-                        sort = 0;
-                        MPI_Sendrecv(my_array, rank_size, MPI_FLOAT, right_neighbor, 0, received_array, right_count, MPI_FLOAT, right_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                        merge_array_right(my_array, received_array, result_array, rank_size, right_count);
-                    }
+            if(left_neighbor!=-1){
+                MPI_Sendrecv(my_array, 1, MPI_FLOAT, left_neighbor, 0, &received_num, 1, MPI_FLOAT, left_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                if(received_num>my_array[0]){
+                    sort = 0;
+                    MPI_Sendrecv(my_array, rank_size, MPI_FLOAT, left_neighbor, 0, received_array, left_count, MPI_FLOAT, left_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    merge_array_left(my_array, received_array, result_array, rank_size, left_count);
                 }
             }
         }
+        //even round
+        if(rank&1){
+            if(left_neighbor!=-1){
+                MPI_Sendrecv(my_array, 1, MPI_FLOAT, left_neighbor, 0, &received_num, 1, MPI_FLOAT, left_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                if(received_num>my_array[0]){
+                    sort = 0;
+                    MPI_Sendrecv(my_array, rank_size, MPI_FLOAT, left_neighbor, 0, received_array, left_count, MPI_FLOAT, left_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    merge_array_left(my_array, received_array, result_array, rank_size, left_count);
+                }
+            }
+        }
+        else {
+            if(right_neighbor!=-1){
+                MPI_Sendrecv(my_array+rank_size-1, 1, MPI_FLOAT, right_neighbor, 0, &received_num, 1, MPI_FLOAT, right_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                if(received_num<my_array[rank_size-1]){
+                    sort = 0;
+                    MPI_Sendrecv(my_array, rank_size, MPI_FLOAT, right_neighbor, 0, received_array, right_count, MPI_FLOAT, right_neighbor, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                    merge_array_right(my_array, received_array, result_array, rank_size, right_count);
+                }
+            }
+        }
+        MPI_Allreduce(&sort, &all_sort, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
     }
-    std::cout<<"end iteration qqq\n";
     
     MPI_File_open(MPI_COMM_WORLD, output_filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &output_file);
-    std::cout<<"what\n";
     if (rank_size != 0) {
         // for(int i=0;i<rank_size;i++){
         //     printf("%f", my_array[i]);
         // }
         // printf("output from %d\n", rank);
-        std::cout<<"hi";
         MPI_File_write_at(output_file, sizeof(float) * start, my_array, rank_size, MPI_FLOAT, MPI_STATUS_IGNORE);
     }
     MPI_File_close(&output_file);
-    std::cout<<"finish output\n";
     delete []my_array;
     delete []received_array;
     delete []result_array;
 
-    std::cout<<"finish free\n";
     MPI_Finalize();
     return 0;
 }
