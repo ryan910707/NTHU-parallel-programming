@@ -1,0 +1,56 @@
+#proc areadef
+  rectangle: 1 1 6 4
+  xrange: -1 2
+  yrange:  0 3.81470e-06
+  xaxis.stubs: inc
+  yaxis.stubs: inc
+  xaxis.stubrange: 0 1
+  xaxis.stubvert: yes
+  xaxis.label: sorted index
+  xaxis.labeldistance: 0.5
+  yaxis.label: time in seconds
+                                                                                
+#proc getdata
+data:
+0 0 5.86269e-01 1.47950e-02 6.64420e-02 3.81470e-06 0.5862651853 1.9073e-06 1.9073e-06 0 0 0 
+                                                                                
+ #proc bars
+  lenfield: 8
+  locfield: 1
+  color: red
+  legendlabel: MPI_Allreduce
+  barwidth: 2
+  outline: no
+  #saveas A
+ #proc bars
+  #clone: A
+  lenfield: 9
+  color: green
+  legendlabel: MPI_Comm_rank
+  stackfields: *
+                                                                                
+ #proc bars
+  #clone: A
+  lenfield: 10
+  color: blue
+  legendlabel: MPI_Init
+  stackfields: *
+                                                                                
+ #proc bars
+  #clone: A
+  lenfield: 11
+  color: yellow
+  legendlabel: MPI_Finalize
+  stackfields: *
+                                                                                
+ #proc bars
+  #clone: A
+  lenfield: 12
+  color: purple
+  legendlabel: MPI_Comm_size
+  stackfields: *
+                                                                                
+ 
+#proc legend
+  location: max+0.4 max
+  seglen: 0.3
