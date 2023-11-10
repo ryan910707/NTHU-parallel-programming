@@ -68,51 +68,50 @@ void* mandelbrot(void* arg) {
     for (int j = id; j < height; j += num_threads) {
         double y0 = j * y_scale + lower;
         __m128d v_y0 = _mm_load1_pd(&y0);
-        for (int i = 0; i < width; i+=2) {
-            double x0[2] = {i * x_scale + left, (i + 1) * x_scale + left};
-            __m128d v_x0 = _mm_load_pd(x0);
-            __m128d v_x = _mm_set_pd(0, 0);
-            __m128d v_y = _mm_set_pd(0, 0);
-            __m128d v_length_squared = _mm_set_pd(0, 0);
-            int repeats[2] = {0, 0};
-            int _available[2] = {1, 1};
-            while(_available[0]||_available[1]){
-                if(_available[0]){
-                    if((repeats[0]<iters && _mm_comilt_sd(v_length_squared,v_4 )))
-                        repeats[0]++;
-                    else 
-                        _available[0] = 0;
+        for (int i = 0; i < width; ++i) {
+            if(i+1<width){
+                double x0[2] = {i * x_scale + left, (i + 1) * x_scale + left};
+                __m128d v_x0 = _mm_load_pd(x0);
+                __m128d v_x = _mm_setzero_pd();
+                __m128d v_y = _mm_setzero_pd();
+                __m128d v_sq_x = _mm_setzero_pd();
+                __m128d v_sq_y = _mm_setzero_pd();
+                __m128i v_repeat = _mm_setzero_si128();
+                __m128d v_length_squared = _mm_setzero_pd();
+                int repeats = 0;
+                while(repeats < iters){
+                    __m128d v_cmp = _mm_cmpgt_pd(v_4, v_length_squared);
+                    //if two > 4 break
+                    if (_mm_movemask_pd(v_cmp) == 0)
+                        break;
+                    repeats++;
+                    __m128d temp = _mm_add_pd(_mm_sub_pd(v_sq_x, v_sq_y), v_x0);
+                    v_y = _mm_add_pd(_mm_mul_pd(_mm_mul_pd(v_x, v_y), v_2), v_y0);
+                    v_x = temp;
+                    v_sq_x = _mm_mul_pd(v_x,v_x);
+                    v_sq_y = _mm_mul_pd(v_y, v_y);
+                    v_length_squared = _mm_or_pd(_mm_andnot_pd(v_cmp, v_length_squared), _mm_and_pd(v_cmp, _mm_add_pd(v_sq_x, v_sq_y)));
+                    v_repeat = _mm_add_epi64(v_repeat, _mm_srli_epi64(_mm_castpd_si128(v_cmp), 63));
                 }
-                if(_available[1]){
-                    double upperValue = _mm_cvtsd_f64(_mm_unpackhi_pd(v_length_squared, v_length_squared));
-                    if((repeats[1]<iters && upperValue < 4.0))
-                        repeats[1]++;
-                    else 
-                        _available[1] = 0;
+                _mm_storel_epi64((__m128i*)(image + j*width+i), _mm_shuffle_epi32(v_repeat, 0b01000));
+                i++;
+            }
+            else {
+                double x0 = i * x_scale + left;
+                int repeats = 0;
+                double x = 0;
+                double y = 0;
+                double length_squared = 0;
+                while (repeats < iters && length_squared < 4) {
+                    double temp = x * x - y * y + x0;
+                    y = 2 * x * y + y0;
+                    x = temp;
+                    length_squared = x * x + y * y;
+                    ++repeats;
                 }
-                __m128d temp = _mm_add_pd(_mm_sub_pd(_mm_mul_pd(v_x, v_x), _mm_mul_pd(v_y, v_y)), v_x0);
-                v_y = _mm_add_pd(_mm_mul_pd(_mm_mul_pd(v_x, v_y), v_2), v_y0);
-                v_x = temp;
-                v_length_squared = _mm_add_pd(_mm_mul_pd(v_x, v_x), _mm_mul_pd(v_y, v_y));
+                image[j * width + i] = repeats;
             }
-            image[j * width + i] = repeats[0];
-            image[j * width + i+1] = repeats[1];   
-        }
-        if(odd){
-            int i = width-1;
-            double x0 = i * x_scale + left;
-            int repeats = 0;
-            double x = 0;
-            double y = 0;
-            double length_squared = 0;
-            while (repeats < iters && length_squared < 4) {
-                double temp = x * x - y * y + x0;
-                y = 2 * x * y + y0;
-                x = temp;
-                length_squared = x * x + y * y;
-                ++repeats;
-            }
-            image[j * width + i] = repeats;
+
         }
     }
 

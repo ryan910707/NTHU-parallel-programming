@@ -58,7 +58,7 @@ void write_png(const char* filename, int iters, int width, int height, const int
         png_write_row(png_ptr, row);
         new_y += partition;
 		if (new_y >= partition * world_size)
-			new_y = new_y % partition + 1;
+			new_y = new_y%partition + 1;
     }
     free(row);
     png_write_end(png_ptr, NULL);
@@ -117,34 +117,30 @@ int main(int argc, char** argv) {
 
         #pragma omp parallel for schedule(dynamic) default(shared)
         for (int i = 0; i < width-1; i+=2) {
-                double x0[2] = {i * x_scale + left, (i + 1) * x_scale + left};
-				__m128d v_x0 = _mm_load_pd(x0);
-				__m128d v_x = _mm_set_pd(0, 0);
-				__m128d v_y = _mm_set_pd(0, 0);
-				__m128d v_length_squared = _mm_set_pd(0, 0);
-				int repeats[2] = {0, 0};
-                int _available[2] = {1, 1};
-                while(_available[0]||_available[1]){
-                    if(_available[0]){
-                        if((repeats[0]<iters && _mm_comilt_sd(v_length_squared,v_4 )))
-                            repeats[0]++;
-                        else 
-                            _available[0] = 0;
-                    }
-                    if(_available[1]){
-                        double upperValue = _mm_cvtsd_f64(_mm_unpackhi_pd(v_length_squared, v_length_squared));
-                        if((repeats[1]<iters && upperValue < 4.0))
-                            repeats[1]++;
-                        else 
-                            _available[1] = 0;
-                    }
-                    __m128d temp = _mm_add_pd(_mm_sub_pd(_mm_mul_pd(v_x, v_x), _mm_mul_pd(v_y, v_y)), v_x0);
-					v_y = _mm_add_pd(_mm_mul_pd(_mm_mul_pd(v_x, v_y), v_2), v_y0);
-					v_x = temp;
-					v_length_squared = _mm_add_pd(_mm_mul_pd(v_x, v_x), _mm_mul_pd(v_y, v_y));
-                }
-                image[row_count * width + i] = repeats[0];
-                image[row_count * width + i+1] = repeats[1];   
+            double x0[2] = {i * x_scale + left, (i + 1) * x_scale + left};
+            __m128d v_x0 = _mm_load_pd(x0);
+            __m128d v_x = _mm_setzero_pd();
+            __m128d v_y = _mm_setzero_pd();
+            __m128d v_sq_x = _mm_setzero_pd();
+            __m128d v_sq_y = _mm_setzero_pd();
+            __m128i v_repeat = _mm_setzero_si128();
+            __m128d v_length_squared = _mm_setzero_pd();
+            int repeats = 0;
+            while(repeats < iters){
+                __m128d v_cmp = _mm_cmpgt_pd(v_4, v_length_squared);
+                //if two > 4 break
+                if (_mm_movemask_pd(v_cmp) == 0)
+                    break;
+                repeats++;
+                __m128d temp = _mm_add_pd(_mm_sub_pd(v_sq_x, v_sq_y), v_x0);
+                v_y = _mm_add_pd(_mm_mul_pd(_mm_mul_pd(v_x, v_y), v_2), v_y0);
+                v_x = temp;
+                v_sq_x = _mm_mul_pd(v_x,v_x);
+                v_sq_y = _mm_mul_pd(v_y, v_y);
+                v_length_squared = _mm_or_pd(_mm_andnot_pd(v_cmp, v_length_squared), _mm_and_pd(v_cmp, _mm_add_pd(v_sq_x, v_sq_y)));
+                v_repeat = _mm_add_epi64(v_repeat, _mm_srli_epi64(_mm_castpd_si128(v_cmp), 63));
+            }
+            _mm_storel_epi64((__m128i*)(image + row_count*width+i), _mm_shuffle_epi32(v_repeat, 0b01000));
         }
         if(odd){
             //handle odd width 
