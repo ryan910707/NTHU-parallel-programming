@@ -111,7 +111,9 @@ int main(int argc, char** argv) {
     __m128d v_2 = _mm_set_pd1(2);
 	__m128d v_4 = _mm_set_pd1(4);
 
-    for (int j = height-1-rank, row_count = 0; j >= 0; j -= world_size, row_count++) {
+    #pragma omp parallel for schedule(dynamic) default(shared)
+    for (int j = height-1-rank; j >= 0; j -= world_size) {
+        int row_count = (height-1-rank - j) / world_size;
         double y0 = j * y_scale + lower;
         __m128d v_y0 = _mm_load1_pd(&y0);
 
