@@ -11,7 +11,7 @@
 #include <emmintrin.h>
 
 int num_threads;
-
+int odd;
 int* image;
 int width;
 int height;
@@ -68,54 +68,51 @@ void* mandelbrot(void* arg) {
     for (int j = id; j < height; j += num_threads) {
         double y0 = j * y_scale + lower;
         __m128d v_y0 = _mm_load1_pd(&y0);
-        for (int i = 0; i < width; ++i) {
-            if(i+1<width){
-                double x0[2] = {i * x_scale + left, (i + 1) * x_scale + left};
-				__m128d v_x0 = _mm_load_pd(x0);
-				__m128d v_x = _mm_set_pd(0, 0);
-				__m128d v_y = _mm_set_pd(0, 0);
-				__m128d v_length_squared = _mm_set_pd(0, 0);
-				int repeats[2] = {0, 0};
-                int _available[2] = {1, 1};
-                while(_available[0]||_available[1]){
-                    if(_available[0]){
-                        if((repeats[0]<iters && _mm_comilt_sd(v_length_squared,v_4 )))
-                            repeats[0]++;
-                        else 
-                            _available[0] = 0;
-                    }
-                    if(_available[1]){
-                        double upperValue = _mm_cvtsd_f64(_mm_unpackhi_pd(v_length_squared, v_length_squared));
-                        if((repeats[1]<iters && upperValue < 4.0))
-                            repeats[1]++;
-                        else 
-                            _available[1] = 0;
-                    }
-                    __m128d temp = _mm_add_pd(_mm_sub_pd(_mm_mul_pd(v_x, v_x), _mm_mul_pd(v_y, v_y)), v_x0);
-					v_y = _mm_add_pd(_mm_mul_pd(_mm_mul_pd(v_x, v_y), v_2), v_y0);
-					v_x = temp;
-					v_length_squared = _mm_add_pd(_mm_mul_pd(v_x, v_x), _mm_mul_pd(v_y, v_y));
+        for (int i = 0; i < width; i+=2) {
+            double x0[2] = {i * x_scale + left, (i + 1) * x_scale + left};
+            __m128d v_x0 = _mm_load_pd(x0);
+            __m128d v_x = _mm_set_pd(0, 0);
+            __m128d v_y = _mm_set_pd(0, 0);
+            __m128d v_length_squared = _mm_set_pd(0, 0);
+            int repeats[2] = {0, 0};
+            int _available[2] = {1, 1};
+            while(_available[0]||_available[1]){
+                if(_available[0]){
+                    if((repeats[0]<iters && _mm_comilt_sd(v_length_squared,v_4 )))
+                        repeats[0]++;
+                    else 
+                        _available[0] = 0;
                 }
-                image[j * width + i] = repeats[0];
-                image[j * width + i+1] = repeats[1];
-                i++;
-            }
-            else {
-                double x0 = i * x_scale + left;
-                int repeats = 0;
-                double x = 0;
-                double y = 0;
-                double length_squared = 0;
-                while (repeats < iters && length_squared < 4) {
-                    double temp = x * x - y * y + x0;
-                    y = 2 * x * y + y0;
-                    x = temp;
-                    length_squared = x * x + y * y;
-                    ++repeats;
+                if(_available[1]){
+                    double upperValue = _mm_cvtsd_f64(_mm_unpackhi_pd(v_length_squared, v_length_squared));
+                    if((repeats[1]<iters && upperValue < 4.0))
+                        repeats[1]++;
+                    else 
+                        _available[1] = 0;
                 }
-                image[j * width + i] = repeats;
+                __m128d temp = _mm_add_pd(_mm_sub_pd(_mm_mul_pd(v_x, v_x), _mm_mul_pd(v_y, v_y)), v_x0);
+                v_y = _mm_add_pd(_mm_mul_pd(_mm_mul_pd(v_x, v_y), v_2), v_y0);
+                v_x = temp;
+                v_length_squared = _mm_add_pd(_mm_mul_pd(v_x, v_x), _mm_mul_pd(v_y, v_y));
             }
-            
+            image[j * width + i] = repeats[0];
+            image[j * width + i+1] = repeats[1];   
+        }
+        if(odd){
+            int i = width-1;
+            double x0 = i * x_scale + left;
+            int repeats = 0;
+            double x = 0;
+            double y = 0;
+            double length_squared = 0;
+            while (repeats < iters && length_squared < 4) {
+                double temp = x * x - y * y + x0;
+                y = 2 * x * y + y0;
+                x = temp;
+                length_squared = x * x + y * y;
+                ++repeats;
+            }
+            image[j * width + i] = repeats;
         }
     }
 
@@ -148,6 +145,10 @@ int main(int argc, char** argv) {
 
     y_scale = ((upper - lower) / height);
     x_scale = ((right - left) / width);
+
+    if(width&1){
+        odd = 1;
+    }
 
     for (int i = 0; i < num_threads; i++) {
         thread_ids[i] = i;
