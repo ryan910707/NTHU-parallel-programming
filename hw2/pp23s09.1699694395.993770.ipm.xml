@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<ipm_job_profile>
+<calltable nsections="1" >
+<section module="MPI" nentries="69" >
+<entry name="MPI_Init" />
+<entry name="MPI_Init_thread" />
+<entry name="MPI_Finalize" />
+<entry name="MPI_Comm_rank" />
+<entry name="MPI_Comm_size" />
+<entry name="MPI_Send" />
+<entry name="MPI_Ssend" />
+<entry name="MPI_Rsend" />
+<entry name="MPI_Bsend" />
+<entry name="MPI_Isend" />
+<entry name="MPI_Issend" />
+<entry name="MPI_Irsend" />
+<entry name="MPI_Ibsend" />
+<entry name="MPI_Recv" />
+<entry name="MPI_Irecv" />
+<entry name="MPI_Sendrecv" />
+<entry name="MPI_Sendrecv_replace" />
+<entry name="MPI_Wait" />
+<entry name="MPI_Waitany" />
+<entry name="MPI_Waitall" />
+<entry name="MPI_Waitsome" />
+<entry name="MPI_Probe" />
+<entry name="MPI_Iprobe" />
+<entry name="MPI_Send_init" />
+<entry name="MPI_Ssend_init" />
+<entry name="MPI_Rsend_init" />
+<entry name="MPI_Bsend_init" />
+<entry name="MPI_Recv_init" />
+<entry name="MPI_Buffer_attach" />
+<entry name="MPI_Buffer_detach" />
+<entry name="MPI_Test" />
+<entry name="MPI_Testany" />
+<entry name="MPI_Testall" />
+<entry name="MPI_Testsome" />
+<entry name="MPI_Start" />
+<entry name="MPI_Startall" />
+<entry name="MPI_Bcast" />
+<entry name="MPI_Reduce" />
+<entry name="MPI_Reduce_scatter" />
+<entry name="MPI_Barrier" />
+<entry name="MPI_Gather" />
+<entry name="MPI_Gatherv" />
+<entry name="MPI_Scatter" />
+<entry name="MPI_Scatterv" />
+<entry name="MPI_Scan" />
+<entry name="MPI_Allgather" />
+<entry name="MPI_Allgatherv" />
+<entry name="MPI_Allreduce" />
+<entry name="MPI_Alltoall" />
+<entry name="MPI_Alltoallv" />
+<entry name="MPI_Comm_group" />
+<entry name="MPI_Comm_compare" />
+<entry name="MPI_Comm_dup" />
+<entry name="MPI_Comm_create" />
+<entry name="MPI_Comm_split" />
+<entry name="MPI_Comm_free" />
+<entry name="MPI_Ibcast" />
+<entry name="MPI_Ireduce" />
+<entry name="MPI_Ireduce_scatter" />
+<entry name="MPI_Igather" />
+<entry name="MPI_Igatherv" />
+<entry name="MPI_Iscatter" />
+<entry name="MPI_Iscatterv" />
+<entry name="MPI_Iscan" />
+<entry name="MPI_Iallgather" />
+<entry name="MPI_Iallgatherv" />
+<entry name="MPI_Iallreduce" />
+<entry name="MPI_Ialltoall" />
+<entry name="MPI_Ialltoallv" />
+</section>
+</calltable>
+<task ipm_version="2.0.6" cookie="nocookie" mpi_rank="0" mpi_size="3" stamp_init="1699694395.993770" stamp_final="1699694407.055784" username="pp23s09" allocationname="unknown" flags="0" pid="573578" >
+<job nhosts="3" ntasks="3" start="1699694395" final="1699694407" cookie="nocookie" code="unknown" >4930934</job>
+<host mach_name="x86_64" mach_info="x86_64_Linux" >apollo46</host>
+<perf wtime="1.10620e+01" utime="3.08349e+01" stime="6.98120e-02" mtime="2.04052e+00" gflop="0.00000e+00" gbyte="1.18549e-01" omp_num_threads="1"></perf>
+<modules nmod="2">
+<module name="MPI" time="2.04052e+00" ></module>
+<module name="PAPI" time="0.0" ncpu="6" nnodes="2" totalcpus="12" threads="1" cores="6"  vendor="1" vendor_string="GenuineIntel" model="44" model_string="Intel(R) Xeon(R) CPU           X5670  @ 2.93GHz" revision="2.000000" min_mhz="1600" max_mhz="2933" domain="15"></module>
+</modules>
+<switch bytes_tx="0.00000e+00" bytes_rx="0.00000e+00" ></switch>
+<cmdline realpath="/home/pp23/pp23s09/PP/hw2/hw2b" md5sum="912073f14a7f8a7fc455c45500008a7f19" >/home/pp23/pp23s09/PP/hw2/./hw2b ./exp.png 174170376 -0.7894722222222 -0.7825277777777 0.1450468 0.1489531 2549 1439 </cmdline>
+<regions n="1" >
+<region label="ipm_noregion" nexits="1" wtime="1.09077e+01" utime="3.08347e+01" stime="6.50370e-02" mtime="2.04052e+00" id="0">
+<modules nmod="2">
+<module name="MPI" time="2.04052e+00" ></module>
+<module name="PAPI" time="0.0" ncpu="6" nnodes="2" totalcpus="12" threads="1" cores="6"  vendor="1" vendor_string="GenuineIntel" model="44" model_string="Intel(R) Xeon(R) CPU           X5670  @ 2.93GHz" revision="2.000000" min_mhz="1600" max_mhz="2933" domain="15"></module>
+</modules>
+<hpm api="PAPI" ncounter="0" eventset="0" gflop="0.00000e+00" >
+</hpm>
+<func name="MPI_Init" count="1" bytes="0.0000e+00" > 0.0000e+00 </func>
+<func name="MPI_Finalize" count="1" bytes="0.0000e+00" > 0.0000e+00 </func>
+<func name="MPI_Comm_rank" count="1" bytes="0.0000e+00" > 3.0994e-06 </func>
+<func name="MPI_Comm_size" count="1" bytes="0.0000e+00" > 0.0000e+00 </func>
+<func name="MPI_Gather" count="1" bytes="4.1943e+06" > 2.0405e+00 </func>
+</region>
+</regions>
+<hash nlog="5" nkey="5" >
+<hent key="01000100000000000000000000000000" call="MPI_Comm_size" bytes="0" orank="0" region="0" callsite="0" count="1" tid="0" op="" dtype="" >0.0000e+00 0.0000e+00 0.0000e+00</hent>
+<hent key="00C00100000000000000000000000000" call="MPI_Comm_rank" bytes="0" orank="0" region="0" callsite="0" count="1" tid="0" op="" dtype="" >3.0994e-06 3.0994e-06 3.0994e-06</hent>
+<hent key="00800100000000000000000000000000" call="MPI_Finalize" bytes="0" orank="0" region="0" callsite="0" count="1" tid="0" op="" dtype="" >0.0000e+00 0.0000e+00 0.0000e+00</hent>
+<hent key="00000100000000000000000000000000" call="MPI_Init" bytes="0" orank="0" region="0" callsite="0" count="1" tid="0" op="" dtype="" >0.0000e+00 0.0000e+00 0.0000e+00</hent>
+<hent key="0A000100000004000040000000000000" call="MPI_Gather" bytes="4194304" orank="0" region="0" callsite="0" count="1" tid="0" op="" dtype="MPI_INT" >2.0405e+00 2.0405e+00 2.0405e+00</hent>
+</hash>
+<internal rank="0" log_i="1699694407.055784" log_t="1.6997e+09" report_delta="-1.0000e+00" fname="./pp23s09.1699694395.993770.ipm.xml" logrank="0" ></internal>
+</task>
+<task ipm_version="2.0.6" cookie="nocookie" mpi_rank="1" mpi_size="3" stamp_init="1699694395.991243" stamp_final="1699694405.783745" username="pp23s09" allocationname="unknown" flags="0" pid="317420" >
+<job nhosts="3" ntasks="3" start="1699694395" final="1699694405" cookie="nocookie" code="unknown" >4930934</job>
+<host mach_name="x86_64" mach_info="x86_64_Linux" >apollo47</host>
+<perf wtime="9.79250e+00" utime="3.46172e+01" stime="5.11110e-02" mtime="2.99215e-03" gflop="0.00000e+00" gbyte="1.18549e-01" omp_num_threads="1"></perf>
+<modules nmod="2">
+<module name="MPI" time="2.04052e+00" ></module>
+<module name="PAPI" time="0.0" ncpu="6" nnodes="2" totalcpus="12" threads="1" cores="6"  vendor="1" vendor_string="GenuineIntel" model="44" model_string="Intel(R) Xeon(R) CPU           X5670  @ 2.93GHz" revision="2.000000" min_mhz="1600" max_mhz="2933" domain="15"></module>
+</modules>
+<switch bytes_tx="0.00000e+00" bytes_rx="0.00000e+00" ></switch>
+<cmdline realpath="/home/pp23/pp23s09/PP/hw2/hw2b" md5sum="912073f1de7fc47fa555a5550000c47f48" >/home/pp23/pp23s09/PP/hw2/./hw2b ./exp.png 174170376 -0.7894722222222 -0.7825277777777 0.1450468 0.1489531 2549 1439 </cmdline>
+<regions n="1" >
+<region label="ipm_noregion" nexits="1" wtime="9.64869e+00" utime="3.46172e+01" stime="4.60200e-02" mtime="2.99215e-03" id="0">
+<modules nmod="2">
+<module name="MPI" time="2.04052e+00" ></module>
+<module name="PAPI" time="0.0" ncpu="6" nnodes="2" totalcpus="12" threads="1" cores="6"  vendor="1" vendor_string="GenuineIntel" model="44" model_string="Intel(R) Xeon(R) CPU           X5670  @ 2.93GHz" revision="2.000000" min_mhz="1600" max_mhz="2933" domain="15"></module>
+</modules>
+<hpm api="PAPI" ncounter="0" eventset="0" gflop="0.00000e+00" >
+</hpm>
+<func name="MPI_Init" count="1" bytes="0.0000e+00" > 0.0000e+00 </func>
+<func name="MPI_Finalize" count="1" bytes="0.0000e+00" > 0.0000e+00 </func>
+<func name="MPI_Comm_rank" count="1" bytes="0.0000e+00" > 3.0994e-06 </func>
+<func name="MPI_Comm_size" count="1" bytes="0.0000e+00" > 0.0000e+00 </func>
+<func name="MPI_Gather" count="1" bytes="4.1943e+06" > 2.9891e-03 </func>
+</region>
+</regions>
+<hash nlog="5" nkey="5" >
+<hent key="01000100000000000000000000000000" call="MPI_Comm_size" bytes="0" orank="0" region="0" callsite="0" count="1" tid="0" op="" dtype="" >0.0000e+00 0.0000e+00 0.0000e+00</hent>
+<hent key="00C00100000000000000000000000000" call="MPI_Comm_rank" bytes="0" orank="0" region="0" callsite="0" count="1" tid="0" op="" dtype="" >3.0994e-06 3.0994e-06 3.0994e-06</hent>
+<hent key="00800100000000000000000000000000" call="MPI_Finalize" bytes="0" orank="0" region="0" callsite="0" count="1" tid="0" op="" dtype="" >0.0000e+00 0.0000e+00 0.0000e+00</hent>
+<hent key="00000100000000000000000000000000" call="MPI_Init" bytes="0" orank="0" region="0" callsite="0" count="1" tid="0" op="" dtype="" >0.0000e+00 0.0000e+00 0.0000e+00</hent>
+<hent key="0A000100000004000040000000000000" call="MPI_Gather" bytes="4194304" orank="0" region="0" callsite="0" count="1" tid="0" op="" dtype="MPI_INT" >2.9891e-03 2.9891e-03 2.9891e-03</hent>
+</hash>
+<internal rank="1" log_i="1699694405.783745" log_t="1.6997e+09" report_delta="-1.0000e+00" fname="./pp23s09.1699694395.993770.ipm.xml" logrank="0" ></internal>
+</task>
+<task ipm_version="2.0.6" cookie="nocookie" mpi_rank="2" mpi_size="3" stamp_init="1699694395.986593" stamp_final="1699694406.784048" username="pp23s09" allocationname="unknown" flags="0" pid="348831" >
+<job nhosts="3" ntasks="3" start="1699694395" final="1699694406" cookie="nocookie" code="unknown" >4930934</job>
+<host mach_name="x86_64" mach_info="x86_64_Linux" >apollo48</host>
+<perf wtime="1.07975e+01" utime="3.56181e+01" stime="8.15460e-02" mtime="3.00002e-03" gflop="0.00000e+00" gbyte="1.18549e-01" omp_num_threads="1"></perf>
+<modules nmod="2">
+<module name="MPI" time="2.04052e+00" ></module>
+<module name="PAPI" time="0.0" ncpu="6" nnodes="2" totalcpus="12" threads="1" cores="6"  vendor="1" vendor_string="GenuineIntel" model="44" model_string="Intel(R) Xeon(R) CPU           X5670  @ 2.93GHz" revision="2.000000" min_mhz="1600" max_mhz="2933" domain="15"></module>
+</modules>
+<switch bytes_tx="0.00000e+00" bytes_rx="0.00000e+00" ></switch>
+<cmdline realpath="/home/pp23/pp23s09/PP/hw2/hw2b" md5sum="912073f1bb7f8a7f5e555e5500008a7fe0" >/home/pp23/pp23s09/PP/hw2/./hw2b ./exp.png 174170376 -0.7894722222222 -0.7825277777777 0.1450468 0.1489531 2549 1439 </cmdline>
+<regions n="1" >
+<region label="ipm_noregion" nexits="1" wtime="1.07036e+01" utime="3.56179e+01" stime="7.68210e-02" mtime="3.00002e-03" id="0">
+<modules nmod="2">
+<module name="MPI" time="2.04052e+00" ></module>
+<module name="PAPI" time="0.0" ncpu="6" nnodes="2" totalcpus="12" threads="1" cores="6"  vendor="1" vendor_string="GenuineIntel" model="44" model_string="Intel(R) Xeon(R) CPU           X5670  @ 2.93GHz" revision="2.000000" min_mhz="1600" max_mhz="2933" domain="15"></module>
+</modules>
+<hpm api="PAPI" ncounter="0" eventset="0" gflop="0.00000e+00" >
+</hpm>
+<func name="MPI_Init" count="1" bytes="0.0000e+00" > 0.0000e+00 </func>
+<func name="MPI_Finalize" count="1" bytes="0.0000e+00" > 0.0000e+00 </func>
+<func name="MPI_Comm_rank" count="1" bytes="0.0000e+00" > 5.0068e-06 </func>
+<func name="MPI_Comm_size" count="1" bytes="0.0000e+00" > 0.0000e+00 </func>
+<func name="MPI_Gather" count="1" bytes="4.1943e+06" > 2.9950e-03 </func>
+</region>
+</regions>
+<hash nlog="5" nkey="5" >
+<hent key="01000100000000000000000000000000" call="MPI_Comm_size" bytes="0" orank="0" region="0" callsite="0" count="1" tid="0" op="" dtype="" >0.0000e+00 0.0000e+00 0.0000e+00</hent>
+<hent key="00C00100000000000000000000000000" call="MPI_Comm_rank" bytes="0" orank="0" region="0" callsite="0" count="1" tid="0" op="" dtype="" >5.0068e-06 5.0068e-06 5.0068e-06</hent>
+<hent key="00800100000000000000000000000000" call="MPI_Finalize" bytes="0" orank="0" region="0" callsite="0" count="1" tid="0" op="" dtype="" >0.0000e+00 0.0000e+00 0.0000e+00</hent>
+<hent key="00000100000000000000000000000000" call="MPI_Init" bytes="0" orank="0" region="0" callsite="0" count="1" tid="0" op="" dtype="" >0.0000e+00 0.0000e+00 0.0000e+00</hent>
+<hent key="0A000100000004000040000000000000" call="MPI_Gather" bytes="4194304" orank="0" region="0" callsite="0" count="1" tid="0" op="" dtype="MPI_INT" >2.9950e-03 2.9950e-03 2.9950e-03</hent>
+</hash>
+<internal rank="2" log_i="1699694406.784048" log_t="1.6997e+09" report_delta="-1.0000e+00" fname="./pp23s09.1699694395.993770.ipm.xml" logrank="0" ></internal>
+</task>
+</ipm_job_profile>

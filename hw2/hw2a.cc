@@ -61,6 +61,9 @@ void write_png(const char* filename, int iters, int width, int height, const int
 
 
 void* mandelbrot(void* arg) {
+    struct timespec start, end, temp;
+    double time_used;   
+    clock_gettime(CLOCK_MONOTONIC, &start); 
     int id = *(int*)arg;
     __m128d v_2 = _mm_set_pd1(2);
 	__m128d v_4 = _mm_set_pd1(4);
@@ -115,6 +118,18 @@ void* mandelbrot(void* arg) {
         }
     }
 
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    if ((end.tv_nsec - start.tv_nsec) < 0) {
+        temp.tv_sec = end.tv_sec-start.tv_sec-1;
+        temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
+    } else {
+        temp.tv_sec = end.tv_sec - start.tv_sec;
+        temp.tv_nsec = end.tv_nsec - start.tv_nsec;
+    }
+    time_used = temp.tv_sec + (double) temp.tv_nsec / 1000000000.0;
+
+    printf("%f second\n", time_used); 
+
     pthread_exit(NULL);
 }
 
@@ -149,6 +164,8 @@ int main(int argc, char** argv) {
         odd = 1;
     }
 
+    
+    
     for (int i = 0; i < num_threads; i++) {
         thread_ids[i] = i;
         pthread_create(&threads[i], NULL, mandelbrot, &thread_ids[i]);
@@ -157,7 +174,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < num_threads; i++) {
         pthread_join(threads[i], NULL);
     }
-
+    
     /* draw and cleanup */
     write_png(filename, iters, width, height, image);
     free(image);

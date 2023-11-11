@@ -2,7 +2,7 @@
 #define _GNU_SOURCE
 #endif
 #define PNG_NO_SETJMP
-// #include <sched.h>
+#include <sched.h>
 // #include <assert.h>
 #include <png.h>
 #include <math.h>
@@ -68,7 +68,7 @@ void write_png(const char* filename, int iters, int width, int height, const int
 
 int main(int argc, char** argv) {
     /* detect how many CPUs are available */
-    // cpu_set_t cpu_set;
+    //  cpu_set_t cpu_set;
     // sched_getaffinity(0, sizeof(cpu_set), &cpu_set);
 
     MPI_Init(&argc, &argv);
@@ -111,13 +111,16 @@ int main(int argc, char** argv) {
     __m128d v_2 = _mm_set_pd1(2);
 	__m128d v_4 = _mm_set_pd1(4);
 
-    #pragma omp parallel for schedule(dynamic) default(shared)
+    // struct timespec start, end, temp;
+    // double time_used;   
+    // clock_gettime(CLOCK_MONOTONIC, &start); 
+    #pragma omp parallel for schedule(dynamic) default(shared) 
     for (int j = height-1-rank; j >= 0; j -= world_size) {
         int row_count = (height-1-rank - j) / world_size;
         double y0 = j * y_scale + lower;
         __m128d v_y0 = _mm_load1_pd(&y0);
 
-        #pragma omp parallel for schedule(dynamic) default(shared)
+        #pragma omp parallel for schedule(dynamic) default(shared) 
         for (int i = 0; i < width-1; i+=2) {
             double x0[2] = {i * x_scale + left, (i + 1) * x_scale + left};
             __m128d v_x0 = _mm_load_pd(x0);
@@ -163,6 +166,17 @@ int main(int argc, char** argv) {
         }
     }
 
+    // clock_gettime(CLOCK_MONOTONIC, &end);
+    // if ((end.tv_nsec - start.tv_nsec) < 0) {
+    //     temp.tv_sec = end.tv_sec-start.tv_sec-1;
+    //     temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
+    // } else {
+    //     temp.tv_sec = end.tv_sec - start.tv_sec;
+    //     temp.tv_nsec = end.tv_nsec - start.tv_nsec;
+    // }
+    // time_used = temp.tv_sec + (double) temp.tv_nsec / 1000000000.0;
+
+    // printf("%f second\n", time_used); 
     /* draw and cleanup */
     int *final_image = (int*)malloc(width * partition*world_size * sizeof(int));
     MPI_Gather(image, partition * width, MPI_INT, final_image, partition * width, MPI_INT, 0,MPI_COMM_WORLD);
