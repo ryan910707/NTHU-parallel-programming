@@ -105,7 +105,7 @@ inline __device__ int bound_check(int val, int lower, int upper) {
 
 __global__ void sobel(unsigned char *s, unsigned char *t, unsigned height, unsigned width, unsigned channels) {
     __shared__ short shared_mask[Z][Y][X];
-    __shared__ unsigned char shared_s[3*(12)*(12)];   //Tile + 2*bound
+    __shared__ unsigned char shared_s[3*12*12];   //Tile + 2*bound
 
     float val[Z][3];
     //share data 
@@ -125,9 +125,9 @@ __global__ void sobel(unsigned char *s, unsigned char *t, unsigned height, unsig
         int dx = i/(12)-xBound;
         int dy = i%(12)-yBound;
         if(start_x+dx>=0 && start_x+dx<width && start_y+dy>=0 && start_y+dy<height){
-            shared_s[3*(9*(dy+yBound)+(dx+xBound))] = s[channels * (width * (start_y+dy) + (start_x+dx)) + 2];
-            shared_s[3*(9*(dy+yBound)+(dx+xBound))+1] = s[channels * (width * (start_y+dy) + (start_x+dx)) + 1];
-            shared_s[3*(9*(dy+yBound)+(dx+xBound))+2] = s[channels * (width * (start_y+dy) + (start_x+dx)) + 0];
+            shared_s[3*(12*(dy+yBound)+(dx+xBound))+2] = s[channels * (width * (start_y+dy) + (start_x+dx)) + 2];
+            shared_s[3*(12*(dy+yBound)+(dx+xBound))+1] = s[channels * (width * (start_y+dy) + (start_x+dx)) + 1];
+            shared_s[3*(12*(dy+yBound)+(dx+xBound))+0] = s[channels * (width * (start_y+dy) + (start_x+dx)) + 0];
         }
     }
     __syncthreads();
@@ -147,13 +147,14 @@ __global__ void sobel(unsigned char *s, unsigned char *t, unsigned height, unsig
             for (int v = -yBound; v <= yBound; ++v) {
                 for (int u = -xBound; u <= xBound; ++u) {
                     if (bound_check(x + u, 0, width) && bound_check(y + v, 0, height)) {
-                        const unsigned char R = shared_s[channels * (width * (threadIdx.y+yBound + v) + (threadIdx.x+xBound + u)) + 2];
-                        const unsigned char G = shared_s[channels * (width * (threadIdx.y+yBound + v) + (threadIdx.x+xBound + u)) + 1];
-                        const unsigned char B = shared_s[channels * (width * (threadIdx.y+yBound + v) + (threadIdx.x+xBound + u)) + 0];
+                        const unsigned char R = shared_s[channels * (12 * ((int)threadIdx.y+yBound + v) + ((int)threadIdx.x+xBound + u)) + 2];
+                        const unsigned char G = shared_s[channels * (12 * (threadIdx.y+yBound + v) + (threadIdx.x+xBound + u)) + 1];
+                        const unsigned char B = shared_s[channels * (12 * (threadIdx.y+yBound + v) + (threadIdx.x+xBound + u)) + 0];
                         val[i][2] += R * shared_mask[i][u + xBound][v + yBound];
                         val[i][1] += G * shared_mask[i][u + xBound][v + yBound];
                         val[i][0] += B * shared_mask[i][u + xBound][v + yBound];
                     }
+                    __syncthreads();
                 }
             }
         }

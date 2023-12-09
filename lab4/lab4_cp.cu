@@ -162,7 +162,7 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    printf("%d %d %d", height, width, channels);
+    // printf("%d %d %d", height, width, channels);
     dst = (unsigned char *)malloc(height * width * channels * sizeof(unsigned char));
     cudaHostRegister(src, height * width * channels * sizeof(unsigned char), cudaHostRegisterDefault);
 
@@ -178,12 +178,12 @@ int main(int argc, char **argv) {
     const int num_blocks = height / num_threads + 1;
 
     // launch cuda kernel
-    auto start = std::chrono::high_resolution_clock::now();
+    // auto start = std::chrono::high_resolution_clock::now();
     // launch cuda kernel
     sobel << <num_blocks, num_threads>>> (dsrc, ddst, height, width, channels);
-    auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-    printf("sobel time: %d\n", duration);
+    // auto end = std::chrono::high_resolution_clock::now();
+    // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    // printf("sobel time: %d\n", duration);
 
     // cudaMemcpy(...) copy result image to host
     cudaMemcpy(dst, ddst, height * width * channels * sizeof(unsigned char), cudaMemcpyDeviceToHost);

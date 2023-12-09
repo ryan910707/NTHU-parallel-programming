@@ -40,20 +40,24 @@ using namespace std;
   *          (b) CUDA kernel function
   */
 void LinearLayer(float *A, float *B, float *C, float *D, int n, int k, int m) {
-    
-    #pragma acc data copyin(A[:n*k], B[:k*m], C[:m]) copyout(D[:n*m])
+    #pragma acc data copyin(A[0:n*k], B[0:k*m], C[0:m]) copyout(D[0:n*m])
     {
-        #pragma acc parallel loop collapse(2)
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < m; j++) {
-                float sum = C[j];
-                #pragma acc loop reduction(+:sum)
-                for (int a = 0; a < k; a++) {
-                    sum += A[i * k + a] * B[a * m + j];
+        #pragma acc kernels
+        {
+            #pragma acc loop independent
+            for (int i = 0; i < n; i++) {
+                #pragma acc loop independent
+                for (int j = 0; j < m; j++) {
+                    float sum = C[j];
+                    #pragma acc loop independent reduction(+:sum)
+                    for (int a = 0; a < k; a++) {
+                        sum += A[i * k + a] * B[a * m + j];
+                    }
+                    D[i * m + j] = sum;
                 }
-                D[i * m + j] = sum;
             }
         }
+        
     }
 }
 /* https://pytorch.org/docs/stable/generated/torch.nn.Sigmoid.html
@@ -63,12 +67,17 @@ void LinearLayer(float *A, float *B, float *C, float *D, int n, int k, int m) {
 
 /* TODO: Parallel the for loops */
 void Sigmoid(float *A, int n, int m) {
-    #pragma acc data copy(A[:n*m])
-    #pragma acc parallel loop collapse(2)
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < m; j++) {
-            // Sigmoid(x) = 1/(1+exp(x))
-            A[i * m + j] = 1. / (1. + expf(-A[i * m + j]));
+    #pragma acc data copy(A[0:n*m])
+    {
+        #pragma acc kernels
+        {
+            #pragma acc loop independent
+            for (int i = 0; i < n; i++) {
+                #pragma acc loop independent
+                for (int j = 0; j < m; j++) {
+                    A[i * m + j] = 1. / (1. + expf(-A[i * m + j]));
+                }
+            }
         }
     }
 }
@@ -80,22 +89,25 @@ void Sigmoid(float *A, int n, int m) {
 
  /* TODO: Parallel the for loops */
 void Argmax(float *A, int *D, int n, int m) {
-
-    #pragma acc data copyin(A[:n*m]) copyout(D[:n])
+    #pragma acc data copyin(A[0:n*m]) copyout(D[0:n]) 
     {
-        #pragma acc parallel loop 
-        for (int i = 0; i < n; i++) {
-            float mx = A[i * m];
-            int index = 0;
-            #pragma acc loop reduction(max:mx) 
-            for (int j = 1; j < m; j++) {
-                if (mx < A[i * m + j]) {
-                    mx = A[i * m + j];
-                    index = j;
+        #pragma acc kernels
+        {
+            #pragma acc loop independent
+            for (int i = 0; i < n; i++) {
+                float mx = A[i * m];
+                int index = 0;
+                // #pragma acc loop independent
+                for (int j = 1; j < m; j++) {
+                    if (mx < A[i * m + j]) {
+                        mx = A[i * m + j];
+                        index = j;
+                    }
                 }
+                D[i] = index;
             }
-            D[i] = index;
         }
+        
     }
 }
 
