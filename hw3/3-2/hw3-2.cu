@@ -6,6 +6,7 @@ using namespace std;
 #define INF 1073741823
 #define block_size  72
 #define thread_size  24
+#define block_size_index 24
 
 int V,E, pad_V;
 int *matrix;
@@ -50,7 +51,9 @@ __global__ void floyd_phase1(int* device_matrix, int pad_V, int round){
     /*copy device matrix needed to cache*/
     __shared__ int share_matrix[block_size][block_size];
     
+    #pragma unroll 
     for(int i=0;i<3;i++){
+        #pragma unroll
         for(int j=0;j<3;j++){
             share_matrix[3*y+i][3*x+j] = device_matrix[(round*block_size+3*y+i)*pad_V+(round*block_size+3*x+j)];
         }
@@ -58,8 +61,11 @@ __global__ void floyd_phase1(int* device_matrix, int pad_V, int round){
     __syncthreads();
 
     /*calculation*/
+    // #pragma unroll 32
     for(int k=0;k<block_size;k++){
+        #pragma unroll
         for(int i=0;i<3;i++){
+            #pragma unroll
             for(int j=0;j<3;j++){
                 share_matrix[3*y+i][3*x+j] = min(share_matrix[3*y+i][3*x+j], share_matrix[3*y+i][k]+share_matrix[k][3*x+j]);
             }
@@ -68,7 +74,9 @@ __global__ void floyd_phase1(int* device_matrix, int pad_V, int round){
     }
 
     /*write back*/
+    #pragma unroll
     for(int i=0;i<3;i++){
+        #pragma unroll
         for(int j=0;j<3;j++){
             device_matrix[(round*block_size+3*y+i)*pad_V+(round*block_size+3*x+j)] = share_matrix[3*y+i][3*x+j];
         }
@@ -84,47 +92,55 @@ __global__ void floyd_phase2(int* device_matrix, int pad_V, int round, int num_b
     int y = threadIdx.y;
     int start_x, start_y;
 
-    //TODO:change to not use branch
-    if(blockIdx.y==0){    //do col
-        start_x = round*block_size;
-        start_y = blockIdx.x*block_size;
-    }
-    else{  // do row
-        start_x = blockIdx.x*block_size;
-        start_y = round*block_size;
-    }
+
+    start_x = blockIdx.x*block_size*blockIdx.y + round*block_size*(!blockIdx.y);
+    start_y = round*block_size*blockIdx.y + blockIdx.x*block_size*(!blockIdx.y);
 
     /*copy device matrix needed to cache*/
     __shared__ int share_my[block_size][block_size];
     __shared__ int share_phase1[block_size][block_size];
 
+    #pragma unroll 3
     for(int i=0;i<3;i++){
+        #pragma unroll 3
         for(int j=0;j<3;j++){
             share_my[3*y+i][3*x+j] = device_matrix[(start_y+3*y+i)*pad_V+(start_x+3*x+j)];
-        }
-    }
-    for(int i=0;i<3;i++){
-        for(int j=0;j<3;j++){
             share_phase1[3*y+i][3*x+j] = device_matrix[(round*block_size+3*y+i)*pad_V+(round*block_size+3*x+j)];
         }
     }
     __syncthreads();
 
+
     /*calculation*/
-    for(int k=0;k<block_size;k++){
-        for(int i=0;i<3;i++){
-            for(int j=0;j<3;j++){
-                if(blockIdx.y==0)
+    if(blockIdx.y==1){
+        // #pragma unroll 32
+        for(int k=0;k<block_size;k++){
+            #pragma unroll 3
+            for(int i=0;i<3;i++){
+                #pragma unroll 3
+                for(int j=0;j<3;j++){
                     share_my[3*y+i][3*x+j] = min(share_my[3*y+i][3*x+j], share_phase1[3*y+i][k]+share_my[k][3*x+j]);
-                else 
-                    share_my[3*y+i][3*x+j] = min(share_my[3*y+i][3*x+j], share_my[3*y+i][k]+share_phase1[k][3*x+j]);
+                }
             }
         }
-        __syncthreads();
+    }
+    else {
+        // #pragma unroll  32
+        for(int k=0;k<block_size;k++){
+            #pragma unroll 3
+            for(int i=0;i<3;i++){
+                #pragma unroll 3
+                for(int j=0;j<3;j++){
+                    share_my[3*y+i][3*x+j] = min(share_my[3*y+i][3*x+j], share_my[3*y+i][k]+share_phase1[k][3*x+j]);
+                }
+            }
+        }
     }
 
     /*write back*/
+    #pragma unroll 3
     for(int i=0;i<3;i++){
+        #pragma unroll 3
         for(int j=0;j<3;j++){
             device_matrix[(start_y+3*y+i)*pad_V+(start_x+3*x+j)] = share_my[3*y+i][3*x+j];
         }
@@ -141,50 +157,55 @@ __global__ void floyd_phase3(int* device_matrix, int pad_V, int round){
     int start_x = blockIdx.x*block_size;
     int start_y = blockIdx.y*block_size;
 
-    int ans1 = device_matrix[(start_y+3*y)*pad_V+(start_x+3*x)];
-    int ans2 = device_matrix[(start_y+3*y)*pad_V+(start_x+3*x+1)];
-    int ans3 = device_matrix[(start_y+3*y)*pad_V+(start_x+3*x+2)];
-    int ans4 = device_matrix[(start_y+3*y+1)*pad_V+(start_x+3*x)];
-    int ans5 = device_matrix[(start_y+3*y+1)*pad_V+(start_x+3*x+1)];
-    int ans6 = device_matrix[(start_y+3*y+1)*pad_V+(start_x+3*x+2)];
-    int ans7 = device_matrix[(start_y+3*y+2)*pad_V+(start_x+3*x)];
-    int ans8 = device_matrix[(start_y+3*y+2)*pad_V+(start_x+3*x+1)];
-    int ans9 = device_matrix[(start_y+3*y+2)*pad_V+(start_x+3*x+2)];
+    int dy = start_y+3*y;
+    int dx = start_x+3*x;
+    int ans1 = device_matrix[(start_y+y)*pad_V+(start_x+x)];
+    int ans2 = device_matrix[(start_y+y)*pad_V+(start_x+x+block_size_index)];
+    int ans3 = device_matrix[(start_y+y)*pad_V+(start_x+x+block_size_index*2)];
+    int ans4 = device_matrix[(start_y+y+block_size_index)*pad_V+(start_x+x)];
+    int ans5 = device_matrix[(start_y+y+block_size_index)*pad_V+(start_x+x+block_size_index)];
+    int ans6 = device_matrix[(start_y+y+block_size_index)*pad_V+(start_x+x+block_size_index*2)];
+    int ans7 = device_matrix[(start_y+y+block_size_index*2)*pad_V+(start_x+x)];
+    int ans8 = device_matrix[(start_y+y+block_size_index*2)*pad_V+(start_x+x+block_size_index)];
+    int ans9 = device_matrix[(start_y+y+block_size_index*2)*pad_V+(start_x+x+block_size_index*2)];
 
     /*copy device matrix needed to cache*/
-    __shared__ int share_row[block_size][block_size];
-    __shared__ int share_col[block_size][block_size];
+    __shared__ int share_row[block_size][block_size+1];
+    __shared__ int share_col[block_size][block_size+1];
+    #pragma unroll 3
     for(int i=0;i<3;i++){
+        #pragma unroll 3
         for(int j=0;j<3;j++){ 
-            share_row[3*y+i][3*x+j] = device_matrix[(start_y+3*y+i)*pad_V+(round*block_size+3*x+j)];   //load data with same row
-            share_col[3*y+i][3*x+j] = device_matrix[(round*block_size+3*y+i)*pad_V+(start_x+3*x+j)];    //same col
+            share_row[3*y+i][3*x+j] = device_matrix[(dy+i)*pad_V+(round*block_size+3*x+j)];   //load data with same row
+            share_col[3*y+i][3*x+j] = device_matrix[(round*block_size+3*y+i)*pad_V+(dx+j)];    //same col
         }
     }
     __syncthreads();
 
     /*calculation*/
+    #pragma unroll  
     for(int k=0;k<block_size;k++){
-        ans1 = min(ans1, share_row[3*y][k]+share_col[k][3*x]);
-        ans2 = min(ans2, share_row[3*y][k]+share_col[k][3*x+1]);
-        ans3 = min(ans3, share_row[3*y][k]+share_col[k][3*x+2]);
-        ans4 = min(ans4, share_row[3*y+1][k]+share_col[k][3*x]);
-        ans5 = min(ans5, share_row[3*y+1][k]+share_col[k][3*x+1]);
-        ans6 = min(ans6, share_row[3*y+1][k]+share_col[k][3*x+2]);
-        ans7 = min(ans7, share_row[3*y+2][k]+share_col[k][3*x]);
-        ans8 = min(ans8, share_row[3*y+2][k]+share_col[k][3*x+1]);
-        ans9 = min(ans9, share_row[3*y+2][k]+share_col[k][3*x+2]);
+        ans1 = min(ans1, share_row[y][k]+share_col[k][x]);
+        ans2 = min(ans2, share_row[y][k]+share_col[k][x+block_size_index]);
+        ans3 = min(ans3, share_row[y][k]+share_col[k][x+block_size_index*2]);
+        ans4 = min(ans4, share_row[y+block_size_index][k]+share_col[k][x]);
+        ans5 = min(ans5, share_row[y+block_size_index][k]+share_col[k][x+block_size_index]);
+        ans6 = min(ans6, share_row[y+block_size_index][k]+share_col[k][x+block_size_index*2]);
+        ans7 = min(ans7, share_row[y+block_size_index*2][k]+share_col[k][x]);
+        ans8 = min(ans8, share_row[y+block_size_index*2][k]+share_col[k][x+block_size_index]);
+        ans9 = min(ans9, share_row[y+block_size_index*2][k]+share_col[k][x+block_size_index*2]);
     }
 
     /*write back*/
-    device_matrix[(start_y+3*y)*pad_V+(start_x+3*x)] = ans1;
-    device_matrix[(start_y+3*y)*pad_V+(start_x+3*x+1)] = ans2;
-    device_matrix[(start_y+3*y)*pad_V+(start_x+3*x+2)] = ans3;
-    device_matrix[(start_y+3*y+1)*pad_V+(start_x+3*x)] = ans4;
-    device_matrix[(start_y+3*y+1)*pad_V+(start_x+3*x+1)] = ans5;
-    device_matrix[(start_y+3*y+1)*pad_V+(start_x+3*x+2)] = ans6;
-    device_matrix[(start_y+3*y+2)*pad_V+(start_x+3*x)] = ans7;
-    device_matrix[(start_y+3*y+2)*pad_V+(start_x+3*x+1)] = ans8;
-    device_matrix[(start_y+3*y+2)*pad_V+(start_x+3*x+2)] = ans9;
+    device_matrix[(start_y+y)*pad_V+(start_x+x)] = ans1;
+    device_matrix[(start_y+y)*pad_V+(start_x+x+block_size_index)] = ans2;
+    device_matrix[(start_y+y)*pad_V+(start_x+x+block_size_index*2)] = ans3;
+    device_matrix[(start_y+y+block_size_index)*pad_V+(start_x+x)] = ans4;
+    device_matrix[(start_y+y+block_size_index)*pad_V+(start_x+x+block_size_index)] = ans5;
+    device_matrix[(start_y+y+block_size_index)*pad_V+(start_x+x+block_size_index*2)] = ans6;
+    device_matrix[(start_y+y+block_size_index*2)*pad_V+(start_x+x)] = ans7;
+    device_matrix[(start_y+y+block_size_index*2)*pad_V+(start_x+x+block_size_index)] = ans8;
+    device_matrix[(start_y+y+block_size_index*2)*pad_V+(start_x+x+block_size_index*2)] = ans9;
 }
 
 int main(int argc, char** argv){
@@ -195,7 +216,7 @@ int main(int argc, char** argv){
     //pin
     cudaHostRegister(matrix, sizeof(int)*pad_V*pad_V, cudaHostRegisterDefault);
     cudaMalloc(&device_matrix, sizeof(int)*pad_V*pad_V);
-    cudaMemcpy(device_matrix, matrix, sizeof(int)*pad_V*pad_V, cudaMemcpyHostToDevice);
+    cudaMemcpyAsync(device_matrix, matrix, sizeof(int)*pad_V*pad_V, cudaMemcpyHostToDevice);
 
     int num_block = pad_V/block_size;
     dim3 phase1(1,1);
@@ -210,7 +231,7 @@ int main(int argc, char** argv){
         floyd_phase2<<<phase2, threadPerBlock>>>(device_matrix, pad_V, round, num_block);
         floyd_phase3<<<blockPerGrid, threadPerBlock>>>(device_matrix, pad_V, round);
     }
-    cudaMemcpy(matrix, device_matrix, sizeof(int)*pad_V*pad_V, cudaMemcpyDeviceToHost);
+    cudaMemcpyAsync(matrix, device_matrix, sizeof(int)*pad_V*pad_V, cudaMemcpyDeviceToHost);
     cudaFree(device_matrix);
     output(output_file);
     free(matrix);  
