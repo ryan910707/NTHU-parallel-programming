@@ -85,11 +85,11 @@ __global__ void floyd_phase2(int* device_matrix, int pad_V, int round, int num_b
     int start_x, start_y;
 
     //TODO:change to not use branch
-    if(blockIdx.y==0){    //0~n-1, do col
+    if(blockIdx.y==0){    //do col
         start_x = round*block_size;
         start_y = blockIdx.x*block_size;
     }
-    else{  //n~2n-1, do row
+    else{  // do row
         start_x = blockIdx.x*block_size;
         start_y = round*block_size;
     }
@@ -114,7 +114,10 @@ __global__ void floyd_phase2(int* device_matrix, int pad_V, int round, int num_b
     for(int k=0;k<block_size;k++){
         for(int i=0;i<3;i++){
             for(int j=0;j<3;j++){
-                share_my[3*y+i][3*x+j] = min(share_my[3*y+i][3*x+j], share_phase1[3*y+i][k]+share_my[k][3*x+j]);
+                if(blockIdx.y==0)
+                    share_my[3*y+i][3*x+j] = min(share_my[3*y+i][3*x+j], share_phase1[3*y+i][k]+share_my[k][3*x+j]);
+                else 
+                    share_my[3*y+i][3*x+j] = min(share_my[3*y+i][3*x+j], share_my[3*y+i][k]+share_phase1[k][3*x+j]);
             }
         }
         __syncthreads();
@@ -161,15 +164,15 @@ __global__ void floyd_phase3(int* device_matrix, int pad_V, int round){
 
     /*calculation*/
     for(int k=0;k<block_size;k++){
-        ans1 = min(ans1, share_col[3*y][k]+share_row[k][3*x]);
-        ans2 = min(ans2, share_col[3*y][k]+share_row[k][3*x+1]);    
-        ans3 = min(ans3, share_col[3*y][k]+share_row[k][3*x+2]);
-        ans4 = min(ans4, share_col[3*y+1][k]+share_row[k][3*x]);
-        ans5 = min(ans5, share_col[3*y+1][k]+share_row[k][3*x+1]);
-        ans6 = min(ans6, share_col[3*y+1][k]+share_row[k][3*x+2]);
-        ans7 = min(ans7, share_col[3*y+2][k]+share_row[k][3*x]);
-        ans8 = min(ans8, share_col[3*y+2][k]+share_row[k][3*x+1]);
-        ans9 = min(ans9, share_col[3*y+2][k]+share_row[k][3*x+2]);
+        ans1 = min(ans1, share_row[3*y][k]+share_col[k][3*x]);
+        ans2 = min(ans2, share_row[3*y][k]+share_col[k][3*x+1]);
+        ans3 = min(ans3, share_row[3*y][k]+share_col[k][3*x+2]);
+        ans4 = min(ans4, share_row[3*y+1][k]+share_col[k][3*x]);
+        ans5 = min(ans5, share_row[3*y+1][k]+share_col[k][3*x+1]);
+        ans6 = min(ans6, share_row[3*y+1][k]+share_col[k][3*x+2]);
+        ans7 = min(ans7, share_row[3*y+2][k]+share_col[k][3*x]);
+        ans8 = min(ans8, share_row[3*y+2][k]+share_col[k][3*x+1]);
+        ans9 = min(ans9, share_row[3*y+2][k]+share_col[k][3*x+2]);
     }
 
     /*write back*/
@@ -200,7 +203,7 @@ int main(int argc, char** argv){
     dim3 blockPerGrid(num_block, num_block);
     dim3 threadPerBlock(thread_size, thread_size);
 
-    printf("pad from %d to %d\n", V, pad_V);
+    // printf("pad from %d to %d\n", V, pad_V);
     int total_round = num_block;
     for(int round=0;round<total_round;round++){
         floyd_phase1<<<phase1, threadPerBlock>>>(device_matrix, pad_V, round);
