@@ -1,12 +1,9 @@
 #include <stdio.h>
-#include <algorithm>
-#include <string.h>
-using namespace std;
 
 #define INF 1073741823
-#define block_size  72
-#define thread_size  24
-#define block_size_index 24
+#define block_size  78
+#define thread_size  26
+#define block_size_index 26
 
 int V,E, pad_V;
 int *matrix;
@@ -55,19 +52,19 @@ __global__ void floyd_phase1(int* device_matrix, int pad_V, int round){
     for(int i=0;i<3;i++){
         #pragma unroll
         for(int j=0;j<3;j++){
-            share_matrix[3*y+i][3*x+j] = device_matrix[(round*block_size+3*y+i)*pad_V+(round*block_size+3*x+j)];
+            share_matrix[y+i*block_size_index][x+j*block_size_index] = device_matrix[(round*block_size+y+i*block_size_index)*pad_V+(round*block_size+x+j*block_size_index)];
         }
     }
     __syncthreads();
 
     /*calculation*/
-    // #pragma unroll 32
+    #pragma unroll 
     for(int k=0;k<block_size;k++){
         #pragma unroll
         for(int i=0;i<3;i++){
             #pragma unroll
             for(int j=0;j<3;j++){
-                share_matrix[3*y+i][3*x+j] = min(share_matrix[3*y+i][3*x+j], share_matrix[3*y+i][k]+share_matrix[k][3*x+j]);
+                share_matrix[y+i*block_size_index][x+j*block_size_index] = min(share_matrix[y+i*block_size_index][x+j*block_size_index], share_matrix[y+i*block_size_index][k]+share_matrix[k][x+j*block_size_index]);
             }
         }
         __syncthreads();
@@ -78,7 +75,7 @@ __global__ void floyd_phase1(int* device_matrix, int pad_V, int round){
     for(int i=0;i<3;i++){
         #pragma unroll
         for(int j=0;j<3;j++){
-            device_matrix[(round*block_size+3*y+i)*pad_V+(round*block_size+3*x+j)] = share_matrix[3*y+i][3*x+j];
+            device_matrix[(round*block_size+y+i*block_size_index)*pad_V+(round*block_size+x+j*block_size_index)] = share_matrix[y+i*block_size_index][x+j*block_size_index];
         }
     }
 }
@@ -88,10 +85,9 @@ __global__ void floyd_phase2(int* device_matrix, int pad_V, int round, int num_b
         return;
     }
     /*calculate x, y*/
-    int x = threadIdx.x;  //0~23
+    int x = threadIdx.x;  
     int y = threadIdx.y;
     int start_x, start_y;
-
 
     start_x = blockIdx.x*block_size*blockIdx.y + round*block_size*(!blockIdx.y);
     start_y = round*block_size*blockIdx.y + blockIdx.x*block_size*(!blockIdx.y);
@@ -112,31 +108,22 @@ __global__ void floyd_phase2(int* device_matrix, int pad_V, int round, int num_b
 
 
     /*calculation*/
-    if(blockIdx.y==1){
-        // #pragma unroll 32
-        for(int k=0;k<block_size;k++){
+    
+    #pragma unroll 
+    for(int k=0;k<block_size;k++){
+        #pragma unroll 3
+        for(int i=0;i<3;i++){
             #pragma unroll 3
-            for(int i=0;i<3;i++){
-                #pragma unroll 3
-                for(int j=0;j<3;j++){
-                    share_my[3*y+i][3*x+j] = min(share_my[3*y+i][3*x+j], share_phase1[3*y+i][k]+share_my[k][3*x+j]);
-                }
+            for(int j=0;j<3;j++){
+                int idx1 = (3*y+i)*blockIdx.y+(k)*(!blockIdx.y);
+                int idx2 = (3*x+j)*(!blockIdx.y)+(k)*(blockIdx.y);
+                int idx3 = k*blockIdx.y+(3*y+i)*(!blockIdx.y);
+                int idx4 = k*(!blockIdx.y)+(3*x+j)*blockIdx.y;
+                share_my[3*y+i][3*x+j] = min(share_my[3*y+i][3*x+j], share_phase1[idx1][idx2]+share_my[idx3][idx4]);
             }
         }
     }
-    else {
-        // #pragma unroll  32
-        for(int k=0;k<block_size;k++){
-            #pragma unroll 3
-            for(int i=0;i<3;i++){
-                #pragma unroll 3
-                for(int j=0;j<3;j++){
-                    share_my[3*y+i][3*x+j] = min(share_my[3*y+i][3*x+j], share_my[3*y+i][k]+share_phase1[k][3*x+j]);
-                }
-            }
-        }
-    }
-
+    
     /*write back*/
     #pragma unroll 3
     for(int i=0;i<3;i++){
@@ -170,8 +157,8 @@ __global__ void floyd_phase3(int* device_matrix, int pad_V, int round){
     int ans9 = device_matrix[(start_y+y+block_size_index*2)*pad_V+(start_x+x+block_size_index*2)];
 
     /*copy device matrix needed to cache*/
-    __shared__ int share_row[block_size][block_size+1];
-    __shared__ int share_col[block_size][block_size+1];
+    __shared__ int share_row[block_size][block_size];
+    __shared__ int share_col[block_size][block_size];
     #pragma unroll 3
     for(int i=0;i<3;i++){
         #pragma unroll 3
