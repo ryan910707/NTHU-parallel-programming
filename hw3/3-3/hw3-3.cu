@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <omp.h>
 
 #define INF 1073741823
 #define block_size  78
@@ -133,15 +134,15 @@ __global__ void floyd_phase2(int* device_matrix, int pad_V, int round, int num_b
     }
 }
 
-__global__ void floyd_phase3(int* device_matrix, int pad_V, int round){
-    if(blockIdx.x==round||blockIdx.y==round){
+__global__ void floyd_phase3(int* device_matrix, int pad_V, int round, int yOffset){
+    if(blockIdx.x==round||blockIdx.y+yOffset==round){
         return;
     }
     /*calculate x, y*/
     int x = threadIdx.x;
     int y = threadIdx.y;
     int start_x = blockIdx.x*block_size;
-    int start_y = blockIdx.y*block_size;
+    int start_y = (blockIdx.y + yOffset)*block_size;
 
     int dy = start_y+3*y;
     int dx = start_x+3*x;
@@ -198,27 +199,54 @@ int main(int argc, char** argv){
     char* input_file = argv[1];
     char* output_file = argv[2];
     read_input(input_file);
-    int* device_matrix;
+    int* device_matrix[2];
     //pin
     cudaHostRegister(matrix, sizeof(int)*pad_V*pad_V, cudaHostRegisterDefault);
-    cudaMalloc(&device_matrix, sizeof(int)*pad_V*pad_V);
-    cudaMemcpyAsync(device_matrix, matrix, sizeof(int)*pad_V*pad_V, cudaMemcpyHostToDevice);
+    // cudaMalloc(&device_matrix, sizeof(int)*pad_V*pad_V);
+    // cudaMemcpyAsync(device_matrix, matrix, sizeof(int)*pad_V*pad_V, cudaMemcpyHostToDevice);
 
     int num_block = pad_V/block_size;
     dim3 phase1(1,1);
     dim3 phase2(num_block, 2);
-    dim3 blockPerGrid(num_block, num_block);
+    // dim3 blockPerGrid(num_block, num_block);
     dim3 threadPerBlock(thread_size, thread_size);
 
-    // printf("pad from %d to %d\n", V, pad_V);
-    int total_round = num_block;
-    for(int round=0;round<total_round;round++){
-        floyd_phase1<<<phase1, threadPerBlock>>>(device_matrix, pad_V, round);
-        floyd_phase2<<<phase2, threadPerBlock>>>(device_matrix, pad_V, round, num_block);
-        floyd_phase3<<<blockPerGrid, threadPerBlock>>>(device_matrix, pad_V, round);
+    #pragma omp parallel num_threads(2)
+    {
+        int threadId = omp_get_thread_num();
+		cudaSetDevice(threadId);
+		cudaMalloc((void**)&device_matrix[threadId], pad_V * pad_V * sizeof(int));
+
+        dim3 gridPhase3(num_block, num_block / 2);
+		if (threadId == 1 && (num_block & 1)) ++gridPhase3.y;   //handle odd num_block
+
+        int yOffset = (threadId == 0) ? 0 : num_block / 2;
+
+        cudaMemcpy(device_matrix[threadId] + yOffset * block_size * pad_V, matrix + yOffset * block_size * pad_V, gridPhase3.y * block_size * pad_V * sizeof(int), cudaMemcpyHostToDevice);
+        for (int round = 0; round < num_block; ++round) {
+			if (round >= yOffset && round < yOffset + gridPhase3.y) {
+				cudaMemcpy(matrix + round * block_size * pad_V, device_matrix[threadId] + round * block_size * pad_V, block_size * pad_V * sizeof(int), cudaMemcpyDeviceToHost);
+			}
+			#pragma omp barrier
+
+			if (round < yOffset || round >= yOffset + gridPhase3.y) {
+				cudaMemcpy(device_matrix[threadId] + round * block_size * pad_V, matrix + round * block_size * pad_V, block_size * pad_V * sizeof(int), cudaMemcpyHostToDevice);
+			}
+
+			floyd_phase1<<<phase1, threadPerBlock>>>(device_matrix[threadId], pad_V, round);
+            floyd_phase2<<<phase2, threadPerBlock>>>(device_matrix[threadId], pad_V, round, num_block);
+            floyd_phase3<<<gridPhase3, threadPerBlock>>>(device_matrix[threadId], pad_V, round, yOffset);
+        }
+        cudaMemcpy(matrix + yOffset * block_size * pad_V, device_matrix[threadId] + yOffset * block_size * pad_V, gridPhase3.y * block_size * pad_V * sizeof(int), cudaMemcpyDeviceToHost);
     }
-    cudaMemcpyAsync(matrix, device_matrix, sizeof(int)*pad_V*pad_V, cudaMemcpyDeviceToHost);
-    cudaFree(device_matrix);
+    // int total_round = num_block;
+    // for(int round=0;round<total_round;round++){
+    //     floyd_phase1<<<phase1, threadPerBlock>>>(device_matrix, pad_V, round);
+    //     floyd_phase2<<<phase2, threadPerBlock>>>(device_matrix, pad_V, round, num_block);
+    //     floyd_phase3<<<blockPerGrid, threadPerBlock>>>(device_matrix, pad_V, round);
+    // }
+    // cudaMemcpyAsync(matrix, device_matrix, sizeof(int)*pad_V*pad_V, cudaMemcpyDeviceToHost);
+    // cudaFree(device_matrix);
     output(output_file);
     // free(matrix);  
 }
