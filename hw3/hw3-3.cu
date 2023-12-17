@@ -211,6 +211,7 @@ int main(int argc, char** argv){
     // dim3 blockPerGrid(num_block, num_block);
     dim3 threadPerBlock(thread_size, thread_size);
 
+    
     #pragma omp parallel num_threads(2)
     {
         int threadId = omp_get_thread_num();
@@ -222,8 +223,12 @@ int main(int argc, char** argv){
 
         int yOffset = (threadId == 0) ? 0 : num_block / 2;
 
+         int total_round = num_block;
         cudaMemcpy(device_matrix[threadId] + yOffset * block_size * pad_V, matrix + yOffset * block_size * pad_V, gridPhase3.y * block_size * pad_V * sizeof(int), cudaMemcpyHostToDevice);
-        for (int round = 0; round < num_block; ++round) {
+        // struct timespec start, end, temp;
+        // double time_used;   
+        // clock_gettime(CLOCK_MONOTONIC, &start); 
+        for (int round = 0; round < total_round; ++round) {
 			if (round >= yOffset && round < yOffset + gridPhase3.y) {
 				cudaMemcpy(matrix + round * block_size * pad_V, device_matrix[threadId] + round * block_size * pad_V, block_size * pad_V * sizeof(int), cudaMemcpyDeviceToHost);
 			}
@@ -237,9 +242,20 @@ int main(int argc, char** argv){
             floyd_phase2<<<phase2, threadPerBlock>>>(device_matrix[threadId], pad_V, round, num_block);
             floyd_phase3<<<gridPhase3, threadPerBlock>>>(device_matrix[threadId], pad_V, round, yOffset);
         }
+        // clock_gettime(CLOCK_MONOTONIC, &end);
+        // if ((end.tv_nsec - start.tv_nsec) < 0) {
+        //     temp.tv_sec = end.tv_sec-start.tv_sec-1;
+        //     temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
+        // } else {
+        //     temp.tv_sec = end.tv_sec - start.tv_sec;
+        //     temp.tv_nsec = end.tv_nsec - start.tv_nsec;
+        // }
+        // time_used = temp.tv_sec + (double) temp.tv_nsec / 1000000000.0;
+
+        // printf("%f second\n", time_used); 
         cudaMemcpy(matrix + yOffset * block_size * pad_V, device_matrix[threadId] + yOffset * block_size * pad_V, gridPhase3.y * block_size * pad_V * sizeof(int), cudaMemcpyDeviceToHost);
     }
-    // int total_round = num_block;
+   
     // for(int round=0;round<total_round;round++){
     //     floyd_phase1<<<phase1, threadPerBlock>>>(device_matrix, pad_V, round);
     //     floyd_phase2<<<phase2, threadPerBlock>>>(device_matrix, pad_V, round, num_block);

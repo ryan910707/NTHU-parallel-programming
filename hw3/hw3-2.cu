@@ -197,7 +197,20 @@ __global__ void floyd_phase3(int* device_matrix, int pad_V, int round){
 int main(int argc, char** argv){
     char* input_file = argv[1];
     char* output_file = argv[2];
+    // struct timespec start, end, temp;
+    // double time_used;   
+    // clock_gettime(CLOCK_MONOTONIC, &start); 
     read_input(input_file);
+    // clock_gettime(CLOCK_MONOTONIC, &end);
+    // if ((end.tv_nsec - start.tv_nsec) < 0) {
+    //     temp.tv_sec = end.tv_sec-start.tv_sec-1;
+    //     temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
+    // } else {
+    //     temp.tv_sec = end.tv_sec - start.tv_sec;
+    //     temp.tv_nsec = end.tv_nsec - start.tv_nsec;
+    // }
+    // time_used = temp.tv_sec + (double) temp.tv_nsec / 1000000000.0;
+    // printf("%f second\n", time_used); 
     int* device_matrix;
     //pin
     cudaHostRegister(matrix, sizeof(int)*pad_V*pad_V, cudaHostRegisterDefault);
@@ -211,14 +224,29 @@ int main(int argc, char** argv){
     dim3 threadPerBlock(thread_size, thread_size);
 
     // printf("pad from %d to %d\n", V, pad_V);
+    
     int total_round = num_block;
     for(int round=0;round<total_round;round++){
         floyd_phase1<<<phase1, threadPerBlock>>>(device_matrix, pad_V, round);
         floyd_phase2<<<phase2, threadPerBlock>>>(device_matrix, pad_V, round, num_block);
         floyd_phase3<<<blockPerGrid, threadPerBlock>>>(device_matrix, pad_V, round);
     }
+    
+
+    
     cudaMemcpyAsync(matrix, device_matrix, sizeof(int)*pad_V*pad_V, cudaMemcpyDeviceToHost);
     cudaFree(device_matrix);
+    // clock_gettime(CLOCK_MONOTONIC, &start); 
     output(output_file);
+    // clock_gettime(CLOCK_MONOTONIC, &end);
+    // if ((end.tv_nsec - start.tv_nsec) < 0) {
+    //     temp.tv_sec = end.tv_sec-start.tv_sec-1;
+    //     temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
+    // } else {
+    //     temp.tv_sec = end.tv_sec - start.tv_sec;
+    //     temp.tv_nsec = end.tv_nsec - start.tv_nsec;
+    // }
+    // time_used = temp.tv_sec + (double) temp.tv_nsec / 1000000000.0;
+    // printf("%f second\n", time_used); 
     // free(matrix);  
 }

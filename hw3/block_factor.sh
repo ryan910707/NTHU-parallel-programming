@@ -1,0 +1,2 @@
+make hw3-2
+srun -p prof -N1 -n1 --gres=gpu:1 nvprof --print-gpu-trace --metrics inst_integer,shared_store_throughput,shared_load_throughput,gld_throughput,gst_throughput ./hw3-2 /home/pp23/share/hw3-2/cases/c05.1 ./out
